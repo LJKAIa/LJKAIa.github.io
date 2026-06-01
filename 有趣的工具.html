@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>趣味生产力仪表板 | 番茄钟 + 待办清单 + 每日一句</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none; /* 避免拖动干扰，不影响输入 */
+        }
+
+        body {
+            background: linear-gradient(145deg, #f0f4fa 0%, #d9e2ef 100%);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Poppins', sans-serif;
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+        }
+
+        /* 主容器网格 */
+        .dashboard {
+            max-width: 1300px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 1.8rem;
+            align-items: start;
+        }
+
+        /* 通用卡片样式 */
+        .card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 2rem;
+            padding: 1.5rem 1.6rem;
+            box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.5);
+            transition: transform 0.2s ease, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 22px 32px -12px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h2 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #1F2A48, #2C3E66);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            border-left: 4px solid #ff8c42;
+            padding-left: 0.8rem;
+        }
+
+        /* 番茄钟区域 */
+        .timer-circle {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 1rem 0;
+        }
+
+        .time-display {
+            font-size: 4.8rem;
+            font-weight: 800;
+            font-family: monospace;
+            background: #1f2a3e;
+            padding: 0.2rem 1.2rem;
+            border-radius: 80px;
+            color: #f7d44a;
+            letter-spacing: 4px;
+            box-shadow: inset 0 -2px 0 #3e4a62, 0 8px 18px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+        }
+
+        .mode-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            background: #e9eef3;
+            padding: 0.2rem 1.2rem;
+            border-radius: 40px;
+            color: #2c3e66;
+            margin-bottom: 1.2rem;
+        }
+
+        .timer-buttons {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            border: none;
+            background: #ffffffcc;
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.1s ease;
+            font-family: inherit;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .btn-primary {
+            background: #ff8c42;
+            color: white;
+            box-shadow: 0 3px 0 #b95f1a;
+        }
+
+        .btn-primary:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #b95f1a;
+        }
+
+        .btn-secondary {
+            background: #2c3e66;
+            color: white;
+        }
+
+        /* 待办清单 */
+        .todo-input-group {
+            display: flex;
+            gap: 0.6rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .todo-input-group input {
+            flex: 1;
+            padding: 0.7rem 1rem;
+            border-radius: 48px;
+            border: 1px solid #cddae9;
+            background: white;
+            font-family: inherit;
+            font-size: 0.9rem;
+            outline: none;
+            transition: 0.1s;
+        }
+
+        .todo-input-group input:focus {
+            border-color: #ff8c42;
+            box-shadow: 0 0 0 2px #ff8c4233;
+        }
+
+        .todo-list {
+            list-style: none;
+            max-height: 280px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            background: #f8fafd;
+            margin-bottom: 0.6rem;
+            padding: 0.6rem 1rem;
+            border-radius: 60px;
+            transition: 0.1s;
+            border: 1px solid #e2e8f0;
+        }
+
+        .todo-item:hover {
+            background: #ffffff;
+            transform: scale(1.01);
+        }
+
+        .todo-check {
+            width: 22px;
+            height: 22px;
+            accent-color: #ff8c42;
+            cursor: pointer;
+        }
+
+        .todo-text {
+            flex: 1;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #1f2a44;
+            word-break: break-word;
+        }
+
+        .todo-text.completed {
+            text-decoration: line-through;
+            color: #8e9aaf;
+        }
+
+        .delete-todo {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: #b91c1c;
+            opacity: 0.6;
+            transition: 0.1s;
+            width: 28px;
+            height: 28px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .delete-todo:hover {
+            opacity: 1;
+            background: #ffe2e2;
+        }
+
+        /* 趣味区域 */
+        .quote-box {
+            background: #fef7e6;
+            border-radius: 1.5rem;
+            padding: 1.2rem;
+            margin: 1rem 0;
+            text-align: center;
+            font-style: italic;
+            color: #4b3b2a;
+            box-shadow: inset 0 1px 4px #0001, 0 4px 8px rgba(0,0,0,0.03);
+        }
+
+        .quote-text {
+            font-size: 1rem;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        .quote-author {
+            margin-top: 0.6rem;
+            font-size: 0.8rem;
+            color: #b97f44;
+        }
+
+        .refresh-quote {
+            margin-top: 0.6rem;
+            background: #ede3d0;
+            border: none;
+            padding: 0.3rem 1rem;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+
+        .fun-fact {
+            background: #e3f0fa;
+            border-radius: 1.2rem;
+            padding: 0.8rem 1rem;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 0.85rem;
+            color: #1e4a6e;
+        }
+
+        .celebration-emoji {
+            font-size: 1.8rem;
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0% { transform: scale(0.8); opacity: 0; }
+            80% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* 完成进度条 */
+        .progress-stats {
+            margin-top: 1rem;
+            font-size: 0.75rem;
+            background: #eef2f9;
+            border-radius: 30px;
+            padding: 0.3rem 1rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* 响应式 */
+        @media (max-width: 760px) {
+            body { padding: 1rem; }
+            .time-display { font-size: 3rem; }
+            .card h2 { font-size: 1.3rem; }
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.7rem;
+            color: #5b6e8c;
+        }
+
+        /* 彩蛋小动画 */
+        .confetti {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background-color: #ffbc6e;
+            position: absolute;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.8;
+            animation: fall 1s ease-out forwards;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <!-- 卡片1：番茄时钟 -->
+    <div class="card">
+        <h2>🍅 番茄钟 · 专注神器</h2>
+        <div class="timer-circle">
+            <div class="time-display" id="timerDisplay">25:00</div>
+            <div class="mode-text" id="modeText">🍅 工作时间</div>
+            <div class="timer-buttons">
+                <button class="btn btn-primary" id="startBtn">▶ 开始</button>
+                <button class="btn" id="pauseBtn">⏸ 暂停</button>
+                <button class="btn" id="resetBtn">🔄 重置</button>
+            </div>
+        </div>
+        <div style="margin-top: 1rem; font-size: 0.8rem; text-align: center; background: #f0f2f5; border-radius: 28px; padding: 0.3rem;">
+            💡 工作25分钟 → 休息5分钟 | 番茄钟结束会有惊喜彩蛋~
+        </div>
+    </div>
+
+    <!-- 卡片2：待办清单 (实用核心) -->
+    <div class="card">
+        <h2>📋 今日任务清单</h2>
+        <div class="todo-input-group">
+            <input type="text" id="todoInput" placeholder="写一个有趣的任务..." maxlength="50">
+            <button class="btn btn-primary" id="addTodoBtn">+ 添加</button>
+        </div>
+        <ul class="todo-list" id="todoListContainer">
+            <li style="text-align:center; color:#8a9bb0;">加载中...</li>
+        </ul>
+        <div class="progress-stats" id="todoStats">
+            <span>📊 完成进度</span>
+            <span id="progressPercent">0%</span>
+        </div>
+        <div style="margin-top: 0.8rem; font-size:0.7rem; color:#8f9bb3;">
+            ✅ 点击复选框标记完成 / 点击右侧❌删除
+        </div>
+    </div>
+
+    <!-- 卡片3：趣味加油站 (名言+随机惊喜) -->
+    <div class="card">
+        <h2>✨ 趣味加油站</h2>
+        <div class="quote-box" id="quoteBox">
+            <div class="quote-text" id="quoteText">🌟 正在为你加载智慧火花...</div>
+            <div class="quote-author" id="quoteAuthor">— 灵感小铺</div>
+            <button class="refresh-quote" id="refreshQuoteBtn">🔄 换一句</button>
+        </div>
+        <div class="fun-fact" id="funFactArea">
+            <span>🐱</span> <span id="funFactText">点击右侧按钮，收获今日小确幸～</span>
+            <button class="refresh-quote" id="randomFactBtn" style="margin-left: auto;">🎲 随机趣事</button>
+        </div>
+        <div style="margin-top:1rem; display: flex; justify-content: center;">
+            <button id="celebrateBtn" class="btn btn-secondary">🎉 完成大事！撒花庆祝 🎉</button>
+        </div>
+    </div>
+</div>
+<footer>⚡ 生产力神器 · 番茄钟 + 待办清单 + 每日箴言 | 数据自动保存</footer>
+
+<script>
+    // ---------- 1. 番茄钟逻辑 ----------
+    let timerInterval = null;
+    let currentTimeSeconds = 25 * 60;   // 25分钟
+    let isWorkMode = true;               // true工作 / false休息
+    let isRunning = false;
+
+    const timerDisplay = document.getElementById('timerDisplay');
+    const modeText = document.getElementById('modeText');
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    function updateTimerUI() {
+        let minutes = Math.floor(currentTimeSeconds / 60);
+        let secs = currentTimeSeconds % 60;
+        timerDisplay.innerText = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function switchMode() {
+        if (isWorkMode) {
+            // 工作结束 -> 切换到休息模式 (5分钟)
+            currentTimeSeconds = 5 * 60;
+            isWorkMode = false;
+            modeText.innerText = '☕ 休息时间 · 放松一下';
+            showToastNotification('🍅 工作完成！进入5分钟休息，放松一下吧~', 3000);
+            triggerConfetti(8); // 小彩蛋
+        } else {
+            // 休息结束 -> 工作模式
+            currentTimeSeconds = 25 * 60;
+            isWorkMode = true;
+            modeText.innerText = '🍅 工作时间 · 专注冲刺';
+            showToastNotification('✨ 休息结束！新的番茄钟开始，加油！', 3000);
+            triggerConfetti(12);
+        }
+        updateTimerUI();
+        // 自动保存音视觉反馈
+    }
+
+    function timerTick() {
+        if (!isRunning) return;
+        if (currentTimeSeconds <= 0) {
+            // 时间到，切换模式
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                isRunning = false;
+            }
+            switchMode();
+            // 重新启动倒计时（自动开始下一阶段，更人性化）
+            startTimerInternal();
+        } else {
+            currentTimeSeconds--;
+            updateTimerUI();
+        }
+    }
+
+    function startTimerInternal() {
+        if (timerInterval) clearInterval(timerInterval);
+        isRunning = true;
+        timerInterval = setInterval(timerTick, 1000);
+    }
+
+    function startTimer() {
+        if (isRunning) return;
+        startTimerInternal();
+    }
+
+    function pauseTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            isRunning = false;
+        }
+    }
+
+    function resetTimer() {
+        pauseTimer();
+        isWorkMode = true;
+        currentTimeSeconds = 25 * 60;
+        modeText.innerText = '🍅 工作时间 · 专注冲刺';
+        updateTimerUI();
+        isRunning = false;
+    }
+
+    startBtn.addEventListener('click', startTimer);
+    pauseBtn.addEventListener('click', pauseTimer);
+    resetBtn.addEventListener('click', resetTimer);
+
+    // 简单的toast提示
+    function showToastNotification(msg, duration = 2000) {
+        // 动态创建临时提示
+        let toast = document.createElement('div');
+        toast.innerText = msg;
+        toast.style.position = 'fixed';
+        toast.style.bottom = '80px';
+        toast.style.left = '50%';
+        toast.style.transform = 'translateX(-50%)';
+        toast.style.backgroundColor = '#1f2a3e';
+        toast.style.color = '#f7d44a';
+        toast.style.padding = '8px 20px';
+        toast.style.borderRadius = '40px';
+        toast.style.fontWeight = 'bold';
+        toast.style.fontSize = '0.85rem';
+        toast.style.zIndex = '10000';
+        toast.style.backdropFilter = 'blur(8px)';
+        toast.style.boxShadow = '0 4px 12px black';
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
+
+    // 彩蛋特效: 五彩纸屑
+    function triggerConfetti(count = 20) {
+        for (let i = 0; i < count; i++) {
+            const conf = document.createElement('div');
+            conf.classList.add('confetti');
+            const colors = ['#ff8c42', '#f4d03f', '#2ecc71', '#e67e22', '#e74c3c', '#9b59b6'];
+            conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            conf.style.left = Math.random() * window.innerWidth + 'px';
+            conf.style.top = '-10px';
+            conf.style.width = Math.random() * 10 + 5 + 'px';
+            conf.style.height = conf.style.width;
+            conf.style.opacity = Math.random() * 0.8 + 0.4;
+            conf.style.animationDuration = Math.random() * 1 + 0.8 + 's';
+            document.body.appendChild(conf);
+            setTimeout(() => conf.remove(), 1200);
+        }
+    }
+
+    // ---------- 2. 待办清单 (localStorage) ----------
+    let todos = [];  // 每个元素: { id, text, completed }
+
+    const todoInput = document.getElementById('todoInput');
+    const addBtn = document.getElementById('addTodoBtn');
+    const todoContainer = document.getElementById('todoListContainer');
+    const progressPercentSpan = document.getElementById('progressPercent');
+
+    function saveTodosToLocal() {
+        localStorage.setItem('funTodos', JSON.stringify(todos));
+    }
+
+    function loadTodosFromLocal() {
+        const stored = localStorage.getItem('funTodos');
+        if (stored) {
+            try {
+                todos = JSON.parse(stored);
+            } catch(e) { todos = []; }
+        }
+        if (!todos || todos.length === 0) {
+            // 添加几个默认有趣任务
+            todos = [
+                { id: Date.now() + 1, text: '🍅 完成一个番茄钟专注', completed: false },
+                { id: Date.now() + 2, text: '📋 试试点击复选框', completed: false },
+                { id: Date.now() + 3, text: '🎉 点击「完成大事」按钮', completed: false },
+                { id: Date.now() + 4, text: '✨ 刷新名言获取灵感', completed: false },
+            ];
+            saveTodosToLocal();
+        }
+        renderTodoList();
+    }
+
+    function renderTodoList() {
+        if (!todoContainer) return;
+        if (todos.length === 0) {
+            todoContainer.innerHTML = '<li style="text-align:center; color:#8a9bb0;">✨ 暂无任务，添加一条吧～</li>';
+            updateProgress();
+            return;
+        }
+        todoContainer.innerHTML = '';
+        todos.forEach(todo => {
+            const li = document.createElement('li');
+            li.className = 'todo-item';
+            const check = document.createElement('input');
+            check.type = 'checkbox';
+            check.className = 'todo-check';
+            check.checked = todo.completed;
+            check.addEventListener('change', (e) => {
+                todo.completed = e.target.checked;
+                saveTodosToLocal();
+                renderTodoList();
+                // 如果勾选完成任务，显示小庆祝
+                if (todo.completed) {
+                    triggerConfetti(6);
+                    showToastNotification(`🎯 恭喜完成任务: ${todo.text.substring(0,20)}`, 1500);
+                }
+            });
+            const span = document.createElement('span');
+            span.className = 'todo-text' + (todo.completed ? ' completed' : '');
+            span.innerText = todo.text;
+            const delBtn = document.createElement('button');
+            delBtn.innerHTML = '❌';
+            delBtn.className = 'delete-todo';
+            delBtn.addEventListener('click', () => {
+                todos = todos.filter(t => t.id !== todo.id);
+                saveTodosToLocal();
+                renderTodoList();
+                showToastNotification('🗑 任务已删除', 800);
+            });
+            li.appendChild(check);
+            li.appendChild(span);
+            li.appendChild(delBtn);
+            todoContainer.appendChild(li);
+        });
+        updateProgress();
+    }
+
+    function updateProgress() {
+        if (!todos.length) {
+            progressPercentSpan.innerText = '0%';
+            return;
+        }
+        const completedCount = todos.filter(t => t.completed).length;
+        const percent = Math.round((completedCount / todos.length) * 100);
+        progressPercentSpan.innerText = `${percent}%`;
+    }
+
+    function addNewTodo() {
+        let text = todoInput.value.trim();
+        if (text === "") {
+            showToastNotification("📝 写点有趣的任务吧~", 1000);
+            return;
+        }
+        if (text.length > 50) text = text.slice(0, 48) + '..';
+        const newTodo = {
+            id: Date.now(),
+            text: text,
+            completed: false
+        };
+        todos.push(newTodo);
+        saveTodosToLocal();
+        renderTodoList();
+        todoInput.value = '';
+        showToastNotification("✅ 新任务已添加！", 800);
+        // 添加小动画
+        triggerConfetti(3);
+    }
+
+    addBtn.addEventListener('click', addNewTodo);
+    todoInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') addNewTodo();
+    });
+
+    // ---------- 3. 趣味名言 API + 随机趣事 ----------
+    const quoteTextSpan = document.getElementById('quoteText');
+    const quoteAuthorSpan = document.getElementById('quoteAuthor');
+    const refreshQuoteBtn = document.getElementById('refreshQuoteBtn');
+    const randomFactBtn = document.getElementById('randomFactBtn');
+    const funFactTextSpan = document.getElementById('funFactText');
+
+    // 备用趣事库
+    const funFacts = [
+        "🐱 猫会发出约100种不同的声音，而狗只有10种。",
+        "🍿 爆米花是唯一一种在微波炉中“爆炸”后会变大的谷物。",
+        "📚 阅读可以使压力减少68%，比听音乐更有效。",
+        "💡 番茄钟的名字来源于弗朗西斯科·西里洛使用的番茄形计时器。",
+        "🌍 地球每天被雷击中约860万次。",
+        "🎨 创造力就像肌肉，越锻炼越强壮。",
+        "🧠 大脑在休息时的活跃程度比专注时更高。",
+        "☕ 咖啡因的作用大约需要20-30分钟完全生效。",
+        "📱 人们平均每天滑动手机屏幕距离约100米。",
+        "✨ 完成待办清单会释放多巴胺，产生成就感。"
+    ];
+
+    async function fetchRandomQuote() {
+        try {
+            // 使用免费的quotable API 或者备用，需要支持CORS
+            const response = await fetch('https://api.quotable.io/random');
+            if (!response.ok) throw new Error();
+            const data = await response.json();
+            quoteTextSpan.innerText = `“${data.content}”`;
+            quoteAuthorSpan.innerText = `— ${data.author}`;
+        } catch (error) {
+            // 备用本地名言库
+            const fallbackQuotes = [
+                { text: "效率不是做更多的事，而是做重要的事。", author: "佚名" },
+                { text: "番茄钟教会我们：专注当下，休息也是前进。", author: "时间管理" },
+                { text: "每一个小任务的完成，都是向梦想靠近一步。", author: "灵感笔记" },
+                { text: "保持好奇，世界就会变得有趣。", author: "爱因斯坦" },
+                { text: "行动是治愈恐惧的良药。", author: "拿破仑" }
+            ];
+            const random = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
+            quoteTextSpan.innerText = `“${random.text}”`;
+            quoteAuthorSpan.innerText = `— ${random.author}`;
+        }
+    }
+
+    function refreshQuote() {
+        fetchRandomQuote();
+        showToastNotification("✨ 新名言已送达！", 800);
+    }
+
+    function getRandomFunFact() {
+        const randomIndex = Math.floor(Math.random() * funFacts.length);
+        funFactTextSpan.innerText = funFacts[randomIndex];
+        triggerConfetti(4);
+    }
+
+    refreshQuoteBtn.addEventListener('click', refreshQuote);
+    randomFactBtn.addEventListener('click', getRandomFunFact);
+
+    // 额外庆祝按钮 (全屏快乐)
+    const celebrateBtn = document.getElementById('celebrateBtn');
+    celebrateBtn.addEventListener('click', () => {
+        triggerConfetti(45);
+        showToastNotification("🎉 今天超棒！继续加油 🎉", 2000);
+        // 播放一个虚拟的声音?不需要但开心
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // 简单蜂鸣增加趣味(避免报错)
+        try {
+            const oscillator = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            oscillator.connect(gain);
+            gain.connect(audioCtx.destination);
+            oscillator.frequency.value = 880;
+            gain.gain.value = 0.1;
+            oscillator.start();
+            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        } catch(e) { /* 静默处理，无声音不影响 */ }
+    });
+
+    // 页面加载完成后初始化
+    window.addEventListener('DOMContentLoaded', () => {
+        loadTodosFromLocal();
+        fetchRandomQuote();
+        getRandomFunFact();
+        updateTimerUI();
+        resetTimer(); // 保证显示25:00
+        // 每隔 5 分钟自动获取新名言? (可选)
+        setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                // 每小时自动刷新一下名言，显得活跃
+                if (Math.random() > 0.7) refreshQuote();
+            }
+        }, 120000);
+    });
+</script>
+</body>
+</html>
