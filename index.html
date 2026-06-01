@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>个人简介卡片 | 左中头像+右侧简介 · 底部链接按钮组</title>
+    <!-- 现代优雅字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            /* 由蓝到粉渐变背景 */
+            background: linear-gradient(135deg, #4facfe 0%, #f093fb 100%);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.5rem;
+            line-height: 1.5;
+        }
+
+        /* 主卡片：柔和白+质感阴影 */
+        .profile-card {
+            max-width: 1100px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 2rem;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.03);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            overflow: hidden;
+        }
+
+        .profile-card:hover {
+            box-shadow: 0 30px 55px -15px rgba(0, 0, 0, 0.25);
+        }
+
+        /* ========= 核心区域：左中头像 + 右侧简介 (垂直双居中) ========= */
+        .card-row {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            gap: 2rem;
+            padding: 2.5rem 2.5rem 1.8rem 2.5rem;
+        }
+
+        /* 左侧头像容器 - 垂直水平居中实现「左中是头像」 */
+        .avatar-area {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 180px;
+        }
+
+        .avatar-img {
+            width: 170px;
+            height: 170px;
+            object-fit: cover;
+            border-radius: 50%;
+            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.15), 0 0 0 4px #ffffff, 0 0 0 8px rgba(99, 102, 241, 0.12);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            background: #eef2ff;
+        }
+
+        .avatar-img:hover {
+            transform: scale(1.02);
+            box-shadow: 0 25px 35px -8px rgba(0, 0, 0, 0.2), 0 0 0 4px #fff, 0 0 0 12px rgba(99, 102, 241, 0.2);
+        }
+
+        /* 右侧简介区：垂直居中整体内容 */
+        .intro-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .name {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            background: linear-gradient(125deg, #1E293B, #2D3B55);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin-bottom: 0.3rem;
+            line-height: 1.2;
+        }
+
+        .title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #4b5568;
+            border-left: 4px solid #6366f1;
+            padding-left: 0.75rem;
+            margin-bottom: 1rem;
+            letter-spacing: 0.2px;
+        }
+
+        .bio-text {
+            font-size: 0.98rem;
+            color: #1f2a40;
+            line-height: 1.6;
+            margin-bottom: 1.4rem;
+            max-width: 95%;
+        }
+
+        /* 简介信息网格 */
+        .info-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.7rem 1.2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #1e293b;
+            background: #f1f5f9;
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+            transition: background 0.2s;
+        }
+
+        .info-item:hover {
+            background: #e4e9f2;
+        }
+
+        .info-icon {
+            font-size: 1.1rem;
+        }
+
+        /* 内部行动按钮（作品集 & 简历） */
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.65rem 1.5rem;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-decoration: none;
+            background: transparent;
+            border: 1px solid #cbd5e1;
+            color: #1f2a48;
+        }
+
+        .btn-primary {
+            background: #2d3a5e;
+            border: none;
+            color: white;
+            box-shadow: 0 4px 8px rgba(45, 58, 94, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: #1e2a46;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(45, 58, 94, 0.25);
+        }
+
+        .btn-outline:hover {
+            background: #f0f3fc;
+            border-color: #8b9bcc;
+            transform: translateY(-2px);
+        }
+
+        /* 社交图标栏 */
+        .social-links {
+            display: flex;
+            gap: 0.8rem;
+        }
+        .social-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #f1f5f9;
+            color: #2d3a5e;
+            text-decoration: none;
+            font-size: 1.2rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .social-link:hover {
+            background: #2d3a5e;
+            color: white;
+            transform: translateY(-3px);
+        }
+
+        /* ========= 🆕 资料卡下方新增按钮区域 — 跳转到指定链接 ========= */
+        .card-footer-links {
+            background: #fafcff;
+            border-top: 1px solid #e9edf4;
+            padding: 1.5rem 2.5rem 2rem 2.5rem;
+            transition: background 0.2s;
+        }
+
+        .extra-buttons-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        /* 跳转链接按钮样式 */
+        .jump-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            background: #ffffff;
+            border: 1px solid #dce3ec;
+            padding: 0.7rem 1.6rem;
+            border-radius: 48px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #1f2a48;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+
+        .jump-btn span.emoji {
+            font-size: 1.15rem;
+            font-style: normal;
+        }
+
+        .jump-btn:hover {
+            background: #2d3a5e;
+            border-color: #2d3a5e;
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px -8px rgba(45, 58, 94, 0.3);
+        }
+
+        /* 可选辅助提示 */
+        .link-note {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.7rem;
+            color: #7c8ba0;
+            background: #eef2f9;
+            border-radius: 20px;
+            padding: 0.2rem 0.8rem;
+            margin-left: 1rem;
+            white-space: nowrap;
+        }
+
+        /* 响应式设计：移动端友好 */
+        @media (max-width: 780px) {
+            .card-row {
+                flex-direction: column;
+                align-items: center;
+                gap: 1.5rem;
+                padding: 1.8rem 1.5rem 1.2rem 1.5rem;
+            }
+            .avatar-area {
+                min-width: unset;
+                width: 100%;
+            }
+            .avatar-img {
+                width: 130px;
+                height: 130px;
+            }
+            .intro-area {
+                text-align: center;
+                align-items: center;
+                width: 100%;
+            }
+            .bio-text {
+                max-width: 100%;
+                text-align: center;
+            }
+            .info-grid {
+                justify-content: center;
+            }
+            .action-buttons {
+                justify-content: center;
+            }
+            .social-links {
+                justify-content: center;
+            }
+            .title {
+                text-align: center;
+                border-left: none;
+                padding-left: 0;
+                border-bottom: 2px solid #6366f1;
+                display: inline-block;
+                padding-bottom: 0.3rem;
+            }
+            .card-footer-links {
+                padding: 1.2rem 1.5rem 1.8rem 1.5rem;
+            }
+            .extra-buttons-grid {
+                justify-content: center;
+            }
+            .link-note {
+                margin-left: 0;
+                margin-top: 0.5rem;
+                width: fit-content;
+            }
+        }
+
+        @media (max-width: 550px) {
+            .jump-btn {
+                padding: 0.55rem 1.2rem;
+                font-size: 0.8rem;
+            }
+            .extra-buttons-grid {
+                gap: 0.8rem;
+            }
+            .card-footer-links {
+                padding: 1rem 1.2rem 1.5rem;
+            }
+            .name {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="profile-card">
+    <!-- 核心区域：左中头像 + 右侧垂直居中简介 -->
+    <div class="card-row">
+        <!-- 左侧头像区（严格左中垂直水平居中） -->
+        <div class="avatar-area">
+            <img class="avatar-img" 
+                 src="https://raw.githubusercontent.com/LJKAIa/me/refs/heads/main/skin.jpg" 
+                 alt="DanQing的头像"
+                 onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?background=6366F1&color=fff&rounded=true&size=170&name=Dan+Qing&fontsize=0.32';"
+            >
+        </div>
+
+        <!-- 右侧简介区域（整体垂直居中） -->
+        <div class="intro-area">
+            <h1 class="name">Danqing <span style="font-weight: 500; font-size: 1.6rem;">✨</span></h1>
+            <div class="title">资深全栈设计师 · 创意技术顾问</div>
+            <p class="bio-text">
+                专注构建优雅有温度的数字产品，横跨UI/UX设计与前端架构。8年跨界经验，擅长将复杂逻辑转化为直观体验。坚信设计是技术与人文的交汇点，让每一次交互都传递关怀（AI太强大了）
+            </p>
+
+            <!-- 简介补充信息卡片（突出个人标签） -->
+            <div class="info-grid">
+                <div class="info-item"><span class="info-icon">📍</span> 中国 · 广东</div>
+                <div class="info-item"><span class="info-icon">📧</span> 3931355110@qq.com</div>
+            </div>
+
+            <!-- 原有的作品集与简历按钮 -->
+            <div class="action-buttons">
+                <a href="https://github.com/LJKAIa" class="btn btn-primary" aria-label="github">📂 我的github主页</a>
+                <a href="https://space.bilibili.com/3546982928878453" class="btn btn-primary" aria-label="bilibili">📂 我的bilibili主页</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========= 资料卡下方新增按钮区域：会跳转到指定的外部链接 ========= -->
+    <div class="card-footer-links">
+        <div class="extra-buttons-grid">
+            <!-- 按钮1: -->
+            <a href="https://LJKAIa.github.io/连连看.html" class="jump-btn" target="_blank" rel="noopener noreferrer">
+                <span class="emoji"></span> 连连看
+            </a>
+            <!-- 按钮2：-->
+            <a href="https://github.com" class="jump-btn" target="_blank" rel="noopener noreferrer">
+                GitHub
+            </a>
+            <!-- 按钮3：-->
+            <a href="https://LJKAIa.github.io/有趣的工具.html" class="jump-btn" target="_blank" rel="noopener noreferrer">
+                有趣的工具
+            </a>
+            <!-- 说明提示：所有按钮点击后会打开新标签页，并跳转到对应的html网页 -->
+            <div class="link-note">
+                <span>🔗</span><span class="tip-text">点击跳转页面</span>
+            </div>
+        </div>
+        <!-- 简洁说明（可选），帮助理解 -->
+        <div style="font-size: 0.7rem; color: #8b9ab0; margin-top: 0.8rem; text-align: left; border-left: 2px solid #cbdff2; padding-left: 0.8rem;">
+            💡 按下跳转到本人制作的一些html网页或github
+        </div>
+    </div>
+</div>
+</body>
+</html>
