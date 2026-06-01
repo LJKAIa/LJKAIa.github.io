@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>连连看 · 经典双点消除</title>
+    <style>
+        * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #1a472a 0%, #0e2a1a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Poppins', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+            padding: 20px;
+            margin: 0;
+        }
+
+        /* 游戏主面板 */
+        .game-wrapper {
+            background: rgba(46, 34, 21, 0.55);
+            backdrop-filter: blur(2px);
+            border-radius: 64px;
+            padding: 24px 20px 28px 20px;
+            box-shadow: 0 25px 40px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+        }
+
+        .game-container {
+            max-width: 750px;
+            width: 100%;
+            background: #fef7e8;
+            background-image: radial-gradient(circle at 25% 40%, rgba(255,245,215,0.6) 2%, transparent 2.5%);
+            background-size: 28px 28px;
+            border-radius: 48px;
+            padding: 1.5rem 1.2rem 1.8rem 1.2rem;
+            box-shadow: 0 20px 30px -8px rgba(0, 0, 0, 0.4), inset 0 1px 4px rgba(255, 255, 255, 0.9);
+        }
+
+        /* 信息栏 */
+        .info-panel {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 28px;
+            background: #fff3e0;
+            padding: 10px 18px;
+            border-radius: 100px;
+            box-shadow: inset 0 1px 3px #0001, 0 5px 10px rgba(0,0,0,0.05);
+        }
+
+        .score-box, .time-box {
+            background: #2d2b26;
+            padding: 6px 18px;
+            border-radius: 48px;
+            color: #ffecb3;
+            font-weight: 700;
+            font-size: 1.3rem;
+            letter-spacing: 1px;
+            box-shadow: inset 0 -2px 0 #5f4c2b, 0 3px 6px rgba(0,0,0,0.2);
+        }
+
+        .score-box span, .time-box span {
+            font-size: 0.75rem;
+            margin-right: 6px;
+            color: #ffd966;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            background: #ffcf9a;
+            border: none;
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 6px 18px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.15s;
+            color: #3e2a1f;
+            box-shadow: 0 3px 0 #aa7a4a;
+            font-family: inherit;
+        }
+
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #aa7a4a;
+        }
+
+        .btn-primary {
+            background: #f5b642;
+            color: #2c1a0c;
+            box-shadow: 0 3px 0 #b4621a;
+        }
+
+        /* 游戏棋盘 grid 布局 */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px 10px;
+            justify-items: center;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        /* 卡片样式 */
+        .card {
+            aspect-ratio: 1 / 1;
+            width: 100%;
+            background: #fff2e0;
+            background-image: radial-gradient(circle at 35% 30%, rgba(255,220,150,0.3) 2%, transparent 2.5%);
+            background-size: 12px 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.4rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            box-shadow: 0 10px 0 #ba9f7b, 0 4px 12px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 235, 190, 0.9);
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.05);
+            transform: translateY(-2px);
+        }
+
+        .card.selected {
+            background: #ffe5b4;
+            box-shadow: 0 0 0 3px #ffb347, 0 0 0 6px #ffe0a3, 0 8px 12px rgba(0,0,0,0.2);
+            transform: scale(0.98) translateY(0px);
+            border-radius: 20px;
+        }
+
+        .card.removed {
+            background: #d9cfb5;
+            box-shadow: inset 0 0 0 1px #f2e2c6, 0 4px 8px rgba(0,0,0,0.05);
+            cursor: default;
+            opacity: 0.6;
+            transform: translateY(2px);
+            font-size: 0;
+            background-image: none;
+            border: 1px dashed #b59f7a;
+        }
+
+        .card.removed::after {
+            content: "✓";
+            font-size: 1.6rem;
+            color: #6f5a3e;
+            font-weight: bold;
+            opacity: 0.6;
+        }
+
+        .card:active:not(.removed) {
+            transform: scale(0.97) translateY(1px);
+        }
+
+        /* 提示高亮特效 */
+        .card.hint {
+            animation: pulseGold 0.5s ease-in-out 3;
+            box-shadow: 0 0 0 3px #f5bc70, 0 0 0 6px #fdebb3;
+            background: #ffe2b5;
+        }
+
+        @keyframes pulseGold {
+            0% { transform: scale(1); background: #ffe2b5; }
+            50% { transform: scale(1.02); background: #ffd49f; box-shadow: 0 0 0 5px #ffc107; }
+            100% { transform: scale(1); background: #ffe2b5; }
+        }
+
+        /* 胜利蒙层 */
+        .win-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(6px);
+            visibility: hidden;
+            opacity: 0;
+            transition: 0.2s;
+        }
+        .win-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        .win-card {
+            background: #fef0db;
+            padding: 2rem 2.5rem;
+            border-radius: 60px;
+            text-align: center;
+            box-shadow: 0 20px 35px black;
+            max-width: 300px;
+        }
+        .win-card h2 {
+            font-size: 2rem;
+            color: #2a5c3e;
+            margin-bottom: 1rem;
+        }
+        .win-card p {
+            font-size: 1.2rem;
+            margin-bottom: 1.8rem;
+        }
+        .win-card button {
+            background: #7c5f3a;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: bold;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        @media (max-width: 550px) {
+            .game-container {
+                padding: 1rem;
+            }
+            .board {
+                gap: 8px;
+            }
+            .card {
+                font-size: 1.6rem;
+                border-radius: 14px;
+            }
+            .btn {
+                padding: 4px 12px;
+                font-size: 0.8rem;
+            }
+            .score-box, .time-box {
+                padding: 4px 12px;
+                font-size: 1rem;
+            }
+            .info-panel {
+                gap: 8px;
+            }
+        }
+
+        footer {
+            text-align: center;
+            font-size: 0.7rem;
+            margin-top: 20px;
+            color: #c9b27c;
+        }
+    </style>
+</head>
+<body>
+<div class="game-wrapper">
+    <div class="game-container">
+        <div class="info-panel">
+            <div class="score-box"><span>🎯 得分</span> <span id="scoreValue">0</span> / <span id="totalPairs">18</span></div>
+            <div class="time-box"><span>⏱️ 用时</span> <span id="timerDisplay">00:00</span></div>
+            <div class="buttons">
+                <button class="btn" id="shuffleBtn">🃏 洗牌</button>
+                <button class="btn btn-primary" id="hintBtn">💡 提示</button>
+                <button class="btn" id="newGameBtn">✨ 新游戏</button>
+            </div>
+        </div>
+
+        <!-- 游戏棋盘 6x6 -->
+        <div class="board" id="gameBoard"></div>
+        <footer>✨ 点击相同图案 · 最多两个拐角即可消除 ✨</footer>
+    </div>
+</div>
+
+<div id="winOverlay" class="win-overlay">
+    <div class="win-card">
+        <h2>🎉 胜利啦 🎉</h2>
+        <p>恭喜通关！<br> 用时 <span id="finalTime">0</span> 秒</p>
+        <button id="winNewGameBtn">✨ 再来一局 ✨</button>
+    </div>
+</div>
+
+<script>
+    // ---------- 连连看核心逻辑 ----------
+    // 配置: 6x6 网格, 使用9种可爱emoji, 每种出现4次 (共计36格 = 18对)
+    const ROWS = 6;
+    const COLS = 6;
+    const ICONS = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨']; // 9种
+    const PAIR_COUNT_PER_TYPE = 4;   // 每个图标出现4次 => 2对, 总共 9*4 = 36格 (18对)
+    let totalPairs = (ROWS * COLS) / 2;  // 18
+
+    // 全局游戏状态
+    let grid = [];          // 二维数组存储每个格子图标字符, 消除后为 ''
+    let selectedRow = -1, selectedCol = -1;   // 当前选中的卡片
+    let currentScore = 0;   // 已消除的对数
+    let timerSeconds = 0;
+    let timerInterval = null;
+    let gameActive = true;    // 游戏是否未胜利 (胜利后禁止点击)
+    let isFirstLoad = true;
+
+    // DOM 元素
+    const boardElement = document.getElementById('gameBoard');
+    const scoreSpan = document.getElementById('scoreValue');
+    const totalPairsSpan = document.getElementById('totalPairs');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const hintBtn = document.getElementById('hintBtn');
+    const newGameBtn = document.getElementById('newGameBtn');
+    const winOverlay = document.getElementById('winOverlay');
+    const finalTimeSpan = document.getElementById('finalTime');
+    const winNewGameBtn = document.getElementById('winNewGameBtn');
+
+    // ---------- 辅助函数 ----------
+    function formatTime(sec) {
+        let mins = Math.floor(sec / 60);
+        let remainSec = sec % 60;
+        return `${mins.toString().padStart(2, '0')}:${remainSec.toString().padStart(2, '0')}`;
+    }
+
+    function updateTimerUI() {
+        timerDisplay.innerText = formatTime(timerSeconds);
+    }
+
+    function startTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            if (!gameActive) return;      // 游戏胜利后不再累加
+            timerSeconds++;
+            updateTimerUI();
+        }, 1000);
+    }
+
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+    }
+
+    // 更新得分显示
+    function updateScoreUI() {
+        scoreSpan.innerText = currentScore;
+    }
+
+    // 重置选中高亮
+    function clearSelected() {
+        if (selectedRow !== -1 && selectedCol !== -1) {
+            const prevCard = document.querySelector(`.card[data-row='${selectedRow}'][data-col='${selectedCol}']`);
+            if (prevCard) prevCard.classList.remove('selected');
+        }
+        selectedRow = -1;
+        selectedCol = -1;
+    }
+
+    // 重新渲染整个棋盘 (基于grid数据, 绑定新事件)
+    function renderBoard() {
+        boardElement.innerHTML = '';
+        for (let i = 0; i < ROWS; i++) {
+            for (let j = 0; j < COLS; j++) {
+                const value = grid[i][j];
+                const isRemoved = (value === '');
+                const card = document.createElement('div');
+                card.className = 'card';
+                if (isRemoved) card.classList.add('removed');
+                if (selectedRow === i && selectedCol === j && !isRemoved) card.classList.add('selected');
+                card.setAttribute('data-row', i);
+                card.setAttribute('data-col', j);
+                if (!isRemoved) {
+                    card.innerText = value;
+                } else {
+                    card.innerText = '';  // 已消除只显示对勾(伪类)
+                }
+                card.addEventListener('click', (function(row, col) {
+                    return function() { onCardClick(row, col); };
+                })(i, j));
+                boardElement.appendChild(card);
+            }
+        }
+    }
+
+    // 打乱现有非空图标 (保持现有非空图标集合并随机重排)
+    function shuffleRemaining() {
+        // 收集所有尚未消除的图标
+        let remainingIcons = [];
+        for (let i = 0; i < ROWS; i++) {
+            for (let j = 0; j < COLS; j++) {
+                if (grid[i][j] !== '') {
+                    remainingIcons.push(grid[i][j]);
+                }
+            }
+        }
+        // 随机打乱顺序
+        for (let i = remainingIcons.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [remainingIcons[i], remainingIcons[j]] = [remainingIcons[j], remainingIcons[i]];
+        }
+        // 重新填充回非空格子
+        let idx = 0;
+        for (let i = 0; i < ROWS; i++) {
+            for (let j = 0; j < COLS; j++) {
+                if (grid[i][j] !== '') {
+                    grid[i][j] = remainingIcons[idx++];
+                }
+            }
+        }
+        // 清除选中状态, 重绘
+        clearSelected();
+        renderBoard();
+        // 洗牌后检查是否无解（可选提示）
+        if (!hasRemainingMoves()) {
+            setTimeout(() => {
+                alert('🤔 暂时没有可消除的对子了，点击“洗牌”继续挑战~');
+            }, 50);
+        }
+    }
+
+    // ---------- 连通算法 (经典两点之间最多两个拐角) ----------
+    // 检查水平直线 (x1,y1) -> (x2,y2) 同y轴
+    function isHorizontalClear(row, colA, colB) {
+        if (colA === colB) return true;
+        let minC = Math.min(colA, colB);
+        let maxC = Math.max(colA, colB);
+        for (let c = minC + 1; c < maxC; c++) {
+            if (grid[row][c] !== '') return false;
+        }
+        return true;
+    }
+
+    // 检查垂直直线 (x1,y1) -> (x2,y2) 同x轴
+    function isVerticalClear(col, rowA, rowB) {
+        if (rowA === rowB) return true;
+        let minR = Math.min(rowA, rowB);
+        let maxR = Math.max(rowA, rowB);
+        for (let r = minR + 1; r < maxR; r++) {
+            if (grid[r][col] !== '') return false;
+        }
+        return true;
+    }
+
+    // 直线连通 (同行或同列且中间无障碍)
+    function canConnectDirect(row1, col1, row2, col2) {
+        if (row1 === row2 && col1 === col2) return false;
+        if (row1 === row2) {
+            return isHorizontalClear(row1, col1, col2);
+        }
+        if (col1 === col2) {
+            return isVerticalClear(col1, row1, row2);
+        }
+        return false;
+    }
+
+    // 一个拐点: (row1, col1) -> 拐点(row1, col2) -> (row2, col2)  且拐点为空格
+    function canConnectOneCorner(row1, col1, row2, col2) {
+        // 拐点(row1, col2) 必须为空，且两条直线无障碍
+        if (grid[row1][col2] === '' && canConnectDirect(row1, col1, row1, col2) && canConnectDirect(row2, col2, row1, col2)) {
+            return true;
+        }
+        // 拐点(row2, col1)
+        if (grid[row2][col1] === '' && canConnectDirect(row1, col1, row2, col1) && canConnectDirect(row2, col2, row2, col1)) {
+            return true;
+        }
+        return false;
+    }
+
+    // 两个拐点: 遍历行/列
+    function canConnectTwoCorner(row1, col1, row2, col2) {
+        // 纵向扫描: 对于每一行r
+        for (let r = 0; r < ROWS; r++) {
+            if (r !== row1 && r !== row2) {
+                // 拐点A (r, col1) 和 拐点B (r, col2) 都为空
+                if (grid[r][col1] === '' && grid[r][col2] === '' &&
+                    canConnectDirect(row1, col1, r, col1) &&
+                    canConnectDirect(r, col1, r, col2) &&
+                    canConnectDirect(row2, col2, r, col2)) {
+                    return true;
+                }
+            }
+        }
+        // 横向扫描列
+        for (let c = 0; c < COLS; c++) {
+            if (c !== col1 && c !== col2) {
+                if (grid[row1][c] === '' && grid[row2][c] === '' &&
+                    canConnectDirect(row1, col1, row1, c) &&
+                    canConnectDirect(row1, c, row2, c) &&
+                    canConnectDirect(row2, col2, row2, c)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // 公共连通检查
+    function canConnect(row1, col1, row2, col2) {
+        if (row1 === row2 && col1 === col2) return false;
+        const val1 = grid[row1][col1];
+        const val2 = grid[row2][col2];
+        if (val1 === '' || val2 === '') return false;
+        if (val1 !== val2) return false;
+        if (canConnectDirect(row1, col1, row2, col2)) return true;
+        if (canConnectOneCorner(row1, col1, row2, col2)) return true;
+        if (canConnectTwoCorner(row1, col1, row2, col2)) return true;
+        return false;
+    }
+
+    // 执行消除
+    function eliminatePair(row1, col1, row2, col2) {
+        grid[row1][col1] = '';
+        grid[row2][col2] = '';
+        currentScore++;
+        updateScoreUI();
+        clearSelected();
+        renderBoard();
+
+        // 检查胜利
+        if (currentScore === totalPairs) {
+            gameActive = false;
+            stopTimer();
+            finalTimeSpan.innerText = timerSeconds;
+            winOverlay.classList.add('active');
+        }
+    }
+
+    // 卡片点击逻辑
+    function onCardClick(row, col) {
+        if (!gameActive) return;
+        // 如果点击的格子已经消除
+        if (grid[row][col] === '') return;
+
+        // 情况1: 没有任何卡片选中
+        if (selectedRow === -1 && selectedCol === -1) {
+            // 选中当前卡片
+            clearSelected(); 
+            selectedRow = row;
+            selectedCol = col;
+            renderBoard(); // 重新渲染高亮
+            return;
+        }
+
+        // 情况2: 已经有选中的卡片，判断是否相同且能连通
+        const sRow = selectedRow, sCol = selectedCol;
+        // 如果点击的是同一个卡片: 取消选中
+        if (sRow === row && sCol === col) {
+            clearSelected();
+            renderBoard();
+            return;
+        }
+
+        // 不同卡片，尝试消除
+        if (canConnect(sRow, sCol, row, col)) {
+            // 消除
+            eliminatePair(sRow, sCol, row, col);
+        } else {
+            // 无法消除: 清除原先选中，将当前点击的作为新选中（连连看常见逻辑）
+            clearSelected();
+            selectedRow = row;
+            selectedCol = col;
+            renderBoard();
+            // 可给一个小反馈: 播放错误提示音? 无声音则轻微震动? 不用音频了。
+            const tempCard = document.querySelector(`.card[data-row='${row}'][data-col='${col}']`);
+            if (tempCard) {
+                tempCard.style.transform = 'scale(0.96)';
+                setTimeout(() => { if(tempCard) tempCard.style.transform = ''; }, 150);
+            }
+        }
+    }
+
+    // 检查是否还存在至少一对可消除的（用于提示/洗牌辅助）
+    function hasRemainingMoves() {
+        for (let i = 0; i < ROWS; i++) {
+            for (let j = 0; j < COLS; j++) {
+                if (grid[i][j] === '') continue;
+                for (let i2 = 0; i2 < ROWS; i2++) {
+                    for (let j2 = 0; j2 < COLS; j2++) {
+                        if ((i === i2 && j === j2)) continue;
+                        if (grid[i2][j2] === '') continue;
+                        if (grid[i][j] === grid[i2][j2] && canConnect(i, j, i2, j2)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    // 提示功能: 寻找第一个可消除对，高亮显示
+    function giveHint() {
+        if (!gameActive) {
+            alert("游戏已胜利，请开始新对局吧~");
+            return;
+        }
+        for (let i = 0; i < ROWS; i++) {
+            for (let j = 0; j < COLS; j++) {
+                if (grid[i][j] === '') continue;
+                for (let i2 = 0; i2 < ROWS; i2++) {
+                    for (let j2 = 0; j2 < COLS; j2++) {
+                        if (i === i2 && j === j2) continue;
+                        if (grid[i2][j2] === '') continue;
+                        if (grid[i][j] === grid[i2][j2] && canConnect(i, j, i2, j2)) {
+                            // 高亮两个卡片
+                            const card1 = document.querySelector(`.card[data-row='${i}'][data-col='${j}']`);
+                            const card2 = document.querySelector(`.card[data-row='${i2}'][data-col='${j2}']`);
+                            if (card1) card1.classList.add('hint');
+                            if (card2) card2.classList.add('hint');
+                            setTimeout(() => {
+                                if (card1) card1.classList.remove('hint');
+                                if (card2) card2.classList.remove('hint');
+                            }, 1000);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+        alert("⚠️ 当前无任何可消除对子，请使用「洗牌」继续游戏~");
+    }
+
+    // 初始化/重置游戏 (全新随机布局)
+    function initNewGame() {
+        stopTimer();
+        gameActive = true;
+        currentScore = 0;
+        timerSeconds = 0;
+        updateScoreUI();
+        updateTimerUI();
+        clearSelected();
+
+        // 构建图标池：每个图标重复 PAIR_COUNT_PER_TYPE 次 (保证总格子数一致)
+        let pool = [];
+        for (let icon of ICONS) {
+            for (let k = 0; k < PAIR_COUNT_PER_TYPE; k++) {
+                pool.push(icon);
+            }
+        }
+        // 如果池子大小不等于 rows*cols, 进行修正 (但9*4=36正好)
+        while (pool.length < ROWS * COLS) pool.push('🐣');
+        while (pool.length > ROWS * COLS) pool.pop();
+        // 随机打乱池子
+        for (let i = pool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        // 填充二维数组
+        grid = Array(ROWS).fill().map(() => Array(COLS).fill(''));
+        let idx = 0;
+        for (let i = 0; i < ROWS; i++) {
+            for (let j = 0; j < COLS; j++) {
+                grid[i][j] = pool[idx++];
+            }
+        }
+        totalPairs = (ROWS * COLS) / 2;
+        totalPairsSpan.innerText = totalPairs;
+        renderBoard();
+        startTimer();
+        // 如果初始化后无任何可能对子（小概率因极端打乱但依然存在可解，但洗牌可解），不用额外处理
+        if (!hasRemainingMoves()) {
+            setTimeout(() => {
+                if (gameActive && currentScore !== totalPairs) {
+                    shuffleRemaining();
+                }
+            }, 100);
+        }
+    }
+
+    // 洗牌逻辑（仅打乱现有非空图标，分数不变，时间继续）
+    function handleShuffle() {
+        if (!gameActive) {
+            alert("游戏已结束，请开始新游戏~");
+            return;
+        }
+        if (currentScore === totalPairs) return;
+        shuffleRemaining();
+        clearSelected();
+        // 洗牌后若无可消对子，提示再次洗牌
+        if (!hasRemainingMoves()) {
+            setTimeout(() => {
+                alert('🎲 洗牌后暂无可消除对子，可再点洗牌或使用提示~');
+            }, 80);
+        }
+    }
+
+    // 结束面板新游戏
+    function newGameFromOverlay() {
+        winOverlay.classList.remove('active');
+        initNewGame();
+    }
+
+    // 绑定事件与初始化
+    function bindEvents() {
+        shuffleBtn.onclick = () => handleShuffle();
+        hintBtn.onclick = () => giveHint();
+        newGameBtn.onclick = () => {
+            if (timerInterval) stopTimer();
+            initNewGame();
+        };
+        winNewGameBtn.onclick = () => newGameFromOverlay();
+    }
+
+    // 开始！
+    function startGame() {
+        bindEvents();
+        initNewGame();
+    }
+
+    startGame();
+</script>
+</body>
+</html>
